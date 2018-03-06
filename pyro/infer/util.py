@@ -61,19 +61,6 @@ def reduce_to_target(source, target):
     return source
 
 
-def reduce_to_shape(source, shape):
-    """
-    Sums out any dimensions in source that are of size > 1 in source but of
-    size 1 in target.
-    """
-    while source.dim() > len(shape):
-        source = source.sum(0)
-    for k in range(1, 1 + source.dim()):
-        if source.size(-k) > shape[-k]:
-            source = source.sum(-k, keepdim=True)
-    return source
-
-
 class MultiViewTensor(dict):
     """
     A container for Variables with different shapes.
@@ -91,8 +78,9 @@ class MultiViewTensor(dict):
     """
     def __init__(self, value=None):
         if value is not None:
-            if isinstance(value, Variable):
-                self[value.shape] = value
+            if not isinstance(value, Variable):
+                raise TypeError('Expected a Variable, got a {}'.format(type(value)))
+            self[value.shape] = value
 
     def add(self, term):
         """
@@ -110,6 +98,13 @@ class MultiViewTensor(dict):
                     self[shape] = self[shape] + value
                 else:
                     self[shape] = value
+
+    # This is required for use in TreeSum.
+    def __add__(self, other):
+        result = MultiViewTensor()
+        result.update(self)
+        result.add(other)
+        return result
 
     def sum_leftmost_all_but(self, dim):
         """
@@ -132,12 +127,6 @@ class MultiViewTensor(dict):
         if not self:
             return 0
         return sum(reduce_to_target(x, target) for x in self.values())
-
-    def contract(self, shape):
-        """Opposite of  :meth:`torch.Tensor.expand`."""
-        if not self:
-            return 0
-        return sum(reduce_to_shape(x, shape) for x in self.values())
 
     def __repr__(self):
         return '%s(%s)' % (type(self).__name__, ", ".join([str(k) for k in self.keys()]))

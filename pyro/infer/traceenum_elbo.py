@@ -7,7 +7,7 @@ import pyro.poutine as poutine
 from pyro.distributions.util import is_identically_zero
 from pyro.infer.elbo import ELBO
 from pyro.infer.enum import iter_discrete_traces
-from pyro.infer.util import TreeSum
+from pyro.infer.util import MultiViewTensor, TreeSum
 from pyro.poutine.enumerate_poutine import EnumeratePoutine
 from pyro.poutine.util import prune_subsample_sites
 from pyro.util import check_model_guide_match, check_site_shape, is_nan
@@ -22,7 +22,7 @@ def _compute_upstream_grads(trace):
         score_function_term = site["score_parts"].score_function
         if is_identically_zero(score_function_term):
             continue
-        upstream_grads.add(site["cond_indep_stack"], score_function_term)
+        upstream_grads.add(site["cond_indep_stack"], MultiViewTensor(score_function_term))
 
     return upstream_grads
 
@@ -128,7 +128,6 @@ class TraceEnum_ELBO(ELBO):
                 model_log_pdf = model_site["batch_log_pdf"]
                 log_r = model_log_pdf
                 surrogate_elbo_site = model_log_pdf
-                score_function_term = upstream_grads.get_upstream(cond_indep_stack)
 
                 if not model_site["is_observed"]:
                     guide_log_pdf, _, entropy_term = guide_trace.nodes[name]["score_parts"]
@@ -136,10 +135,13 @@ class TraceEnum_ELBO(ELBO):
                     if not is_identically_zero(entropy_term):
                         surrogate_elbo_site = surrogate_elbo_site - entropy_term
 
+                log_r_weight = log_r * weight
+                score_function_term = upstream_grads.get_upstream(cond_indep_stack)
                 if score_function_term is not None:
+                    score_function_term = score_function_term.contract_as(log_r_weight)
                     surrogate_elbo_site = surrogate_elbo_site + log_r.detach() * score_function_term
 
-                elbo_particle += (log_r * weight).sum().item()
+                elbo_particle += log_r_weight.sum().item()
                 surrogate_elbo_particle = surrogate_elbo_particle + (surrogate_elbo_site * weight).sum()
 
             elbo += elbo_particle / self.num_particles
