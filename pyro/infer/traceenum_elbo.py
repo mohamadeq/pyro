@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import numbers
 import warnings
 
 import pyro
@@ -19,12 +20,28 @@ def _compute_upstream_grads(trace):
     for site in trace.nodes.values():
         if site["type"] != "sample":
             continue
-        score_function_term = site["score_parts"].score_function
-        if is_identically_zero(score_function_term):
+        upstream_grad = site["score_parts"].score_function
+        if is_identically_zero(upstream_grad):
             continue
-        upstream_grads.add(site["cond_indep_stack"], MultiViewTensor(score_function_term))
+        upstream_grads.add(site["cond_indep_stack"], MultiViewTensor(upstream_grad))
 
     return upstream_grads
+
+
+def _collapse_weight(weight, shape, max_iarange_nesting):
+    if isinstance(weight, numbers.Number):
+        return weight
+    if weight.dim() > len(shape):
+        shape = (1,) * (weight.dim() - len(shape)) + shape
+    elif weight.dim() < len(shape):
+        shape = shape[len(shape) - weight.dim():]
+    assert weight.dim() == len(shape), (weight.shape, shape)
+
+    for i, (weight_size, target_size) in enumerate(zip(weight.shape, shape)):
+        if weight_size > target_size:
+            if weight.dim() - i <= max_iarange_nesting:
+                weight = weight[(slice(None),) * i + (slice(None, 1),)]
+    return weight
 
 
 class TraceEnum_ELBO(ELBO):
@@ -91,6 +108,8 @@ class TraceEnum_ELBO(ELBO):
                 log_r = model_site["batch_log_pdf"]
                 if not model_site["is_observed"]:
                     log_r = log_r - guide_trace.nodes[name]["batch_log_pdf"]
+
+                weight = _collapse_weight(weight, log_r.shape, self.max_iarange_nesting)
                 elbo_particle += (log_r * weight).sum().item()
 
             elbo += elbo_particle / self.num_particles
@@ -135,13 +154,15 @@ class TraceEnum_ELBO(ELBO):
                     if not is_identically_zero(entropy_term):
                         surrogate_elbo_site = surrogate_elbo_site - entropy_term
 
-                log_r_weight = log_r * weight
-                score_function_term = upstream_grads.get_upstream(cond_indep_stack)
-                if score_function_term is not None:
-                    score_function_term = score_function_term.contract_as(log_r_weight)
-                    surrogate_elbo_site = surrogate_elbo_site + log_r.detach() * score_function_term
+                upstream_grad = upstream_grads.get_upstream(cond_indep_stack)
+                if upstream_grad is not None:
+                    upstream_grad = upstream_grad.contract_as(log_r)
+                    surrogate_elbo_site = surrogate_elbo_site + log_r.detach() * upstream_grad
 
-                elbo_particle += log_r_weight.sum().item()
+                assert log_r.shape == surrogate_elbo_site.shape
+                weight = _collapse_weight(weight, log_r.shape, self.max_iarange_nesting)
+
+                elbo_particle += (log_r * weight).sum().item()
                 surrogate_elbo_particle = surrogate_elbo_particle + (surrogate_elbo_site * weight).sum()
 
             elbo += elbo_particle / self.num_particles

@@ -240,9 +240,9 @@ def test_elbo_bern(quantity, enumerate1):
         ]))
 
 
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate3", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate3", [None, "sequential", xfail_parallel])
 def test_elbo_berns(enumerate1, enumerate2, enumerate3):
     pyro.clear_param_store()
     num_particles = 10000
@@ -281,9 +281,9 @@ def test_elbo_berns(enumerate1, enumerate2, enumerate3):
 
 
 @pytest.mark.parametrize("max_iarange_nesting", [0, 1])
-@pytest.mark.parametrize("enumerate1", ["sequential", "parallel"])
-@pytest.mark.parametrize("enumerate2", ["sequential", "parallel"])
-@pytest.mark.parametrize("enumerate3", ["sequential", "parallel"])
+@pytest.mark.parametrize("enumerate1", ["sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate2", ["sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate3", ["sequential", xfail_parallel])
 def test_elbo_categoricals(enumerate1, enumerate2, enumerate3, max_iarange_nesting):
     pyro.clear_param_store()
     p1 = variable([0.6, 0.4])
@@ -324,8 +324,8 @@ def test_elbo_categoricals(enumerate1, enumerate2, enumerate3, max_iarange_nesti
         ]))
 
 
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("iarange_dim", [1, 2])
 def test_elbo_iarange(iarange_dim, enumerate1, enumerate2):
     pyro.clear_param_store()
@@ -366,8 +366,8 @@ def test_elbo_iarange(iarange_dim, enumerate1, enumerate2):
     ]))
 
 
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("irange_dim", [1, 2])
 def test_elbo_irange(irange_dim, enumerate1, enumerate2):
     pyro.clear_param_store()
@@ -408,14 +408,11 @@ def test_elbo_irange(irange_dim, enumerate1, enumerate2):
     ]))
 
 
-@pytest.mark.parametrize("enumerate3", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate3", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("inner_dim", [3])
-@pytest.mark.parametrize("outer_dim", [
-    1,
-    xfail_param(2, reason='not using MultiViewTensor in broadcasted var inside iarange'),
-])
+@pytest.mark.parametrize("outer_dim", [2])
 def test_elbo_iarange_iarange(outer_dim, inner_dim, enumerate1, enumerate2, enumerate3):
     pyro.clear_param_store()
     num_particles = 10000
@@ -460,9 +457,9 @@ def test_elbo_iarange_iarange(outer_dim, inner_dim, enumerate1, enumerate2, enum
     ]))
 
 
-@pytest.mark.parametrize("enumerate3", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate3", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("inner_dim", [2])
 @pytest.mark.parametrize("outer_dim", [
     1,
@@ -513,8 +510,8 @@ def test_elbo_iarange_irange(outer_dim, inner_dim, enumerate1, enumerate2, enume
 
 
 @pytest.mark.parametrize("enumerate3", [None, "sequential", xfail_parallel])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("inner_dim", [2])
 @pytest.mark.parametrize("outer_dim", [2])
 def test_elbo_irange_iarange(outer_dim, inner_dim, enumerate1, enumerate2, enumerate3):
@@ -562,8 +559,8 @@ def test_elbo_irange_iarange(outer_dim, inner_dim, enumerate1, enumerate2, enume
 
 
 @pytest.mark.parametrize("enumerate3", [None, "sequential", xfail_parallel])
-@pytest.mark.parametrize("enumerate2", [None, "sequential", "parallel"])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate2", [None, "sequential", xfail_parallel])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 @pytest.mark.parametrize("inner_dim", [2])
 @pytest.mark.parametrize("outer_dim", [2])
 def test_elbo_irange_irange(outer_dim, inner_dim, enumerate1, enumerate2, enumerate3):
@@ -612,7 +609,7 @@ def test_elbo_irange_irange(outer_dim, inner_dim, enumerate1, enumerate2, enumer
 
 @pytest.mark.parametrize("pi1", [0.33, 0.43])
 @pytest.mark.parametrize("pi2", [0.55, 0.27])
-@pytest.mark.parametrize("enumerate1", [None, "sequential", "parallel"])
+@pytest.mark.parametrize("enumerate1", [None, "sequential", xfail_parallel])
 def test_non_mean_field_bern_bern_elbo_gradient(enumerate1, pi1, pi2):
     pyro.clear_param_store()
     num_particles = 10000
@@ -715,6 +712,7 @@ def test_non_mean_field_bern_normal_elbo_gradient(enumerate1, pi1, pi2, pi3, inc
     ]))
 
 
+@pytest.mark.xfail(reason='https://github.com/uber/pyro/issues/846')
 @pytest.mark.parametrize("pi1", [0.33, 0.41])
 @pytest.mark.parametrize("pi2", [0.44, 0.17])
 @pytest.mark.parametrize("pi3", [0.22, 0.29])

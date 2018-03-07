@@ -23,9 +23,7 @@ def _iter_discrete_escape(trace, msg):
 
 
 def _iter_discrete_extend(trace, site, enum_tree):
-    values = site["fn"].enumerate_support()
-    log_probs = site["fn"].log_prob(values).detach()
-    for i, (value, log_prob) in enumerate(zip(values, log_probs)):
+    for i, value in enumerate(site["fn"].enumerate_support()):
         extended_site = site.copy()
         extended_site["value"] = value
         extended_trace = trace.copy()
@@ -76,9 +74,8 @@ def iter_discrete_traces(graph_type, fn, *args, **kwargs):
             log_probs.add((), 0)  # ensures globals are counted exactly once
         for name, site in trace.nodes.items():
             if _iter_discrete_filter(site):
-                cond_indep_stack = site["cond_indep_stack"]
                 log_prob = site["fn"].log_prob(site["value"]).detach()
-                log_probs.add(cond_indep_stack, log_prob)
+                log_probs.add(site["cond_indep_stack"], log_prob)
 
         # Avoid double-counting across traces.
         weights = log_probs.exp()
